@@ -159,7 +159,8 @@ module Delayed
               break
             elsif !stop?
               sleep(self.class.sleep_delay)
-              reload!
+              # do not reload here, reload in work_off.
+              # reload!
             end
           else
             say format("#{count} jobs processed at %.4f j/s, %d failed", count / @realtime, @result.last)
@@ -182,6 +183,16 @@ module Delayed
     # Exit early if interrupted.
     def work_off(num = 100)
       success, failure = 0, 0
+
+      # reload the code here only if
+      # reloading is enabled &&
+      # there are any jobs to run
+      if self.class.reload_app? &&
+          # this `ready_to_run` api is from delayed_job_active_record
+          Delayed::Job.ready_to_run(self, Worker.max_run_time).any?
+
+        reload!
+      end
 
       num.times do
         case reserve_and_run_one_job
@@ -294,6 +305,7 @@ module Delayed
 
     def reload!
       return unless self.class.reload_app?
+      say("Reloading Rails app")
       ActionDispatch::Reloader.cleanup!
       ActionDispatch::Reloader.prepare!
     end
