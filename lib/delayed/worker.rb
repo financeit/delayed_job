@@ -331,9 +331,9 @@ module Delayed
 
     def reload!
       return unless self.class.reload_app?
-      return unless self.jobs_to_run?
+      return unless jobs_to_run?
 
-      say "Reloading Rails App"
+      say 'Reloading Rails App'
       if defined?(ActiveSupport::Reloader)
         Rails.application.reloader.reload!
       else
