@@ -119,10 +119,6 @@ module Delayed
       defined?(ActionDispatch::Reloader) && Rails.application.config.cache_classes == false
     end
 
-    def self.jobs_to_run?
-      Delayed::Job.respond_to?(:jobs_to_run?) && Delayed::Job.jobs_to_run?
-    end
-
     def self.delay_job?(job)
       if delay_jobs.is_a?(Proc)
         delay_jobs.arity == 1 ? delay_jobs.call(job) : delay_jobs.call
@@ -316,6 +312,11 @@ module Delayed
       self.class.lifecycle.run_callbacks(:perform, self, job) { run(job) } if job
     end
 
+    def jobs_to_run?
+      return true unless Delayed::Job.respond_to?(:jobs_to_run?)
+      Delayed::Job.jobs_to_run?(self)
+    end
+
     def reserve_job
       job = Delayed::Job.reserve(self)
       @failed_reserve_count = 0
@@ -330,7 +331,7 @@ module Delayed
 
     def reload!
       return unless self.class.reload_app?
-      return unless self.class.jobs_to_run?
+      return unless self.jobs_to_run?
 
       say "Reloading Rails App"
       if defined?(ActiveSupport::Reloader)
