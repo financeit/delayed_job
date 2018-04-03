@@ -119,6 +119,10 @@ module Delayed
       defined?(ActionDispatch::Reloader) && Rails.application.config.cache_classes == false
     end
 
+    def self.jobs_to_run?
+      Delayed::Job.respond_to?(:jobs_to_run?) && Delayed::Job.jobs_to_run?
+    end
+
     def self.delay_job?(job)
       if delay_jobs.is_a?(Proc)
         delay_jobs.arity == 1 ? delay_jobs.call(job) : delay_jobs.call
@@ -326,6 +330,9 @@ module Delayed
 
     def reload!
       return unless self.class.reload_app?
+      return unless self.class.jobs_to_run?
+
+      say "Reloading Rails App"
       if defined?(ActiveSupport::Reloader)
         Rails.application.reloader.reload!
       else
